@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pada Akhirnya, Bukan Aku — Buku Cerita Digital Interaktif</title>
+  <meta name="description"
+    content="Sebuah buku cerita digital interaktif tentang seseorang yang pernah berharap tulus, namun pada akhirnya harus menerima kenyataan bahwa ia memilih orang lain.">
+
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Alex+Brush&family=Lora:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,600&display=swap"
+    rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body class="mode-midnight">
+
+  <!-- Ambient Particle & Rain Canvas Background -->
+  <canvas id="ambientCanvas"></canvas>
+  <div class="vignette-overlay"></div>
+  <div class="light-beam"></div>
+
+  <!-- Ambient Music & Control Header HUD -->
+  <header class="app-header" id="appHeader">
+    <div class="header-left">
+      <button id="btnHome" class="hud-btn" title="Tutup Buku dan Kembali ke Sampul" aria-label="Kembali ke Sampul">
+        <svg viewBox="0 0 24 24" class="hud-icon">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+        </svg>
+        <span class="hud-label">Sampul</span>
+      </button>
+      <button id="btnToc" class="hud-btn" title="Buka Daftar Isi" aria-label="Daftar Isi">
+        <svg viewBox="0 0 24 24" class="hud-icon">
+          <path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z" />
+        </svg>
+        <span class="hud-label">Daftar Isi</span>
+      </button>
+    </div>
+
+    <div class="header-center">
+      <span class="book-mini-title">Pada Akhirnya, Bukan Aku</span>
+      <span class="current-chapter-indicator" id="chapterIndicator">Sampul Depan</span>
+    </div>
+
+    <div class="header-right">
+      <button id="btnBookmark" class="hud-btn" title="Simpan / Tandai Halaman Terakhir" aria-label="Tandai Halaman">
+        <svg viewBox="0 0 24 24" class="hud-icon bookmark-icon">
+          <path d="M17 3H7c-1.1 0-1.99.9-1.99 2L5 21l7-3 7 3V5c0-1.1-.9-2-2-2z" />
+        </svg>
+        <span class="hud-label bookmark-label" id="bookmarkLabel">Tandai</span>
+      </button>
+      <button id="btnSoundSfx" class="hud-btn active" title="Efek Suara Membalik Kertas" aria-label="Suara Kertas">
+        <svg viewBox="0 0 24 24" class="hud-icon">
+          <path
+            d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+        </svg>
+        <span class="hud-label">Kertas</span>
+      </button>
+      <button id="btnMusic" class="hud-btn" title="Putar Musik Piano Melankolis" aria-label="Musik Piano">
+        <div class="audio-waves" id="audioWaves">
+          <span></span><span></span><span></span>
+        </div>
+        <svg viewBox="0 0 24 24" class="hud-icon music-note-icon">
+          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+        </svg>
+        <span class="hud-label" id="musicStatusText">Musik: Mati</span>
+      </button>
+      <button id="btnTheme" class="hud-btn" title="Ganti Suasana Cahaya (Malam / Lilin)" aria-label="Ganti Suasana">
+        <svg viewBox="0 0 24 24" class="hud-icon">
+          <path
+            d="M12 2c1.1 0 2 .9 2 2v1c0 1.1-.9 2-2 2s-2-.9-2-2V4c0-1.1.9-2 2-2zm-1 8h2v10h-2V10zm-6 2.5a5.5 5.5 0 0 1 11 0c0 1.5-.6 2.87-1.57 3.87l-1.43 1.43V20h-4v-2.2l-1.43-1.43A5.48 5.48 0 0 1 5 12.5z" />
+        </svg>
+        <span class="hud-label" id="themeLabel">Lilin</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Notification Toast -->
+  <div class="toast-notice" id="toastNotice"></div>
+
+  <!-- MAIN SCENE CONTAINER -->
+  <main class="scene-stage">
+
+    <!-- COVER VIEW (Tampilan Awal Saat Pertama Kali Dibuka) -->
+    <section class="cover-scene active" id="coverScene">
+      <div class="cover-wrapper">
+        <div class="cover-book-3d" id="coverBook3d">
+          <div class="cover-front">
+            <div class="cover-leather-texture"></div>
+            <div class="cover-gold-border">
+              <div class="cover-inner-border">
+                <span class="cover-badge">Kisah Patah Hati & Keikhlasan</span>
+                <h1 class="cover-title">Pada Akhirnya, Bukan Aku</h1>
+                <div class="cover-divider">
+                  <span class="divider-gem">✦</span>
+                </div>
+                <p class="cover-subtitle">Cerita tentang seseorang yang pernah berharap, tetapi tidak pernah benar-benar
+                  dipilih.</p>
+
+                <div class="cover-artwork-frame">
+                  <img src="assets/cover.jpg" alt="Ilustrasi dua orang berjarak dalam hujan dan satu berjalan menjauh"
+                    class="cover-artwork-img" loading="eager">
+                  <div class="artwork-glare"></div>
+                </div>
+
+                <div class="cover-author">Oleh Seseorang yang Pernah Tinggal</div>
+              </div>
+            </div>
+            <div class="cover-spine-edge"></div>
+          </div>
+          <div class="cover-pages-block"></div>
+          <div class="cover-back-shadow"></div>
+        </div>
+
+        <div class="cover-action-bar">
+          <p class="cover-quote">“Ada cerita yang tidak berakhir dengan memiliki.”</p>
+          <div class="cover-btn-group">
+            <button class="btn-open-book" id="btnOpenBook">
+              <span class="btn-open-text">Buka Buku</span>
+              <span class="btn-glow"></span>
+            </button>
+            <button class="btn-resume-book hidden" id="btnResumeBook">
+              <span>Lanjutkan Membaca (Hal. <span id="resumePageNum">1</span>)</span>
+            </button>
+          </div>
+          <p class="cover-instruction-tip">Gunakan sentuhan swipe di HP atau klik tepi halaman untuk membalik lembaran
+            cerita.</p>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- READING SPREAD VIEW (Buku Terbuka dengan Halaman Kiri & Kanan) -->
+    <section class="reader-scene" id="readerScene" aria-hidden="true">
+
+      <!-- Side Navigation Arrow Left -->
+      <button class="nav-arrow nav-prev" id="navPrevBtn" title="Halaman Sebelumnya (Panah Kiri)"
+        aria-label="Halaman Sebelumnya">
+        <svg viewBox="0 0 24 24">
+          <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
+        </svg>
+      </button>
+
+      <!-- The 3D Book Container -->
+      <div class="book-viewport">
+        <div class="book-container" id="bookContainer">
+
+          <!-- Physical Book Thickness & Spine Structure -->
+          <div class="book-binding-spine"></div>
+          <div class="book-paper-stack-left"></div>
+          <div class="book-paper-stack-right"></div>
+          <div class="book-center-crease"></div>
+          <div class="book-ribbon-bookmark" id="bookRibbon"></div>
+
+          <!-- BOOK PAGES SPREAD WRAPPER -->
+          <div class="book-spread" id="bookSpread">
+
+            <!-- ================= SPREAD 1 (Hal 1 & 2): PRAKATA & DAFTAR ISI ================= -->
+            <div class="sheet" data-sheet-index="0">
+              <div class="page page-left" data-page-num="1">
+                <div class="page-texture"></div>
+                <div class="page-content center-layout">
+                  <div class="page-watermark">✦</div>
+                  <h2 class="book-main-title-small">PADA AKHIRNYA,<br>BUKAN AKU</h2>
+                  <p class="book-epigraph">
+                    “Kita pernah begitu dekat,<br>
+                    sampai aku lupa bahwa kedekatan<br>
+                    bukan jaminan sebuah tujuan.”
+                  </p>
+                  <div class="vintage-rule"></div>
+                  <div class="preface-text">
+                    <p>Buku ini ditulis bukan untuk menyalahkan siapa pun yang pergi, juga bukan untuk membenci mereka
+                      yang telah memilih tangan lain.</p>
+                    <p>Ini adalah catatan sunyi tentang hati yang belajar berdamai dengan kenyataan: bahwa ada cinta
+                      yang hadir hanya untuk mendewasakan, bukan untuk mempersatukan.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">1</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="2">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="toc-header">
+                    <h3 class="chapter-label">DAFTAR ISI</h3>
+                    <div class="toc-dots-divider"></div>
+                  </div>
+                  <ul class="toc-page-list">
+                    <li data-goto="3">
+                      <span class="toc-title">Bab 1 — Awal yang Tidak Direncanakan</span>
+                      <span class="toc-page-lead">3</span>
+                    </li>
+                    <li data-goto="5">
+                      <span class="toc-title">Bab 2 — Aku Mulai Berharap</span>
+                      <span class="toc-page-lead">5</span>
+                    </li>
+                    <li data-goto="7" class="special-item">
+                      <span class="toc-title">Surat I — Hal yang Tak Pernah Kuucapkan</span>
+                      <span class="toc-page-lead">7</span>
+                    </li>
+                    <li data-goto="9">
+                      <span class="toc-title">Bab 3 — Hal-Hal Kecil yang Kusalahartikan</span>
+                      <span class="toc-page-lead">9</span>
+                    </li>
+                    <li data-goto="11">
+                      <span class="toc-title">Bab 4 — Ada Nama Lain di Hatimu</span>
+                      <span class="toc-page-lead">11</span>
+                    </li>
+                    <li data-goto="13">
+                      <span class="toc-title">Bab 5 — Ternyata Bukan Aku</span>
+                      <span class="toc-page-lead">13</span>
+                    </li>
+                    <li data-goto="15" class="special-item">
+                      <span class="toc-title">Surat II — Di Meja Kafe yang Sama</span>
+                      <span class="toc-page-lead">15</span>
+                    </li>
+                    <li data-goto="17">
+                      <span class="toc-title">Bab 6 — Aku Melihatmu Bahagia Dengannya</span>
+                      <span class="toc-page-lead">17</span>
+                    </li>
+                    <li data-goto="19">
+                      <span class="toc-title">Bab 7 — Berhenti Menunggu</span>
+                      <span class="toc-page-lead">19</span>
+                    </li>
+                    <li data-goto="21">
+                      <span class="toc-title">Bab 8 — Pada Akhirnya, Aku Melepaskanmu</span>
+                      <span class="toc-page-lead">21</span>
+                    </li>
+                  </ul>
+                  <div class="page-footer">
+                    <span class="page-number">2</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 2 (Hal 3 & 4): BAB 1 ================= -->
+            <div class="sheet" data-sheet-index="1">
+              <div class="page page-left" data-page-num="3">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 1</span>
+                    <h2 class="chapter-title">Awal yang Tidak Direncanakan</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">K</span>ita tidak pernah merencanakan siapa yang
+                      akan masuk ke dalam hidup kita dan mengubah cara kita memandang dunia.</p>
+                    <p>Hari itu biasa saja. Langit kelabu di pertengahan sore, aroma tanah basah setelah gerimis reda,
+                      dan deretan pesan singkat yang mulanya tidak berarti apa-apa. Kamu hanya seseorang yang kebetulan
+                      berada di tempat yang sama, mengajukan pertanyaan sederhana tentang hal-hal sepele yang biasanya
+                      kuabaikan.</p>
+                    <p>Namun ada sesuatu dalam caramu mendengar. Kamu tidak hanya menunggu giliran bicara; kamu
+                      benar-benar memperhatikan caraku menceritakan kekhawatiran konyol yang selalu kusembunyikan dari
+                      orang lain.</p>
+                    <p>“Kamu selalu memikirkan segalanya terlalu dalam ya?” tanyamu malam itu, diiringi tawa renyah yang
+                      anehnya langsung menetap di ingatanku.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">3</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="4">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="story-body">
+                    <p>Malam-malam setelah itu berubah. Jam tidurku bergeser perlahan. Lampu kamar sudah padam, namun
+                      cahaya layar ponsel masih menerangi langit-langit kamar dengan percakapan kita yang seolah tidak
+                      pernah kehabisan topik.</p>
+                    <p>Mulai dari lagu kesukaanmu yang selalu kamu putar berulang kali saat lelah, cerita masa kecilmu
+                      yang canggung, hingga ketakutan terbesarmu tentang masa depan.</p>
+                    <p>Aku mulai terbiasa bangun tidur dan menemukan notifikasi darimu. Aku mulai mencari suaramu di
+                      antara hiruk-pikuk hariku yang melelahkan.</p>
+                    <div class="quote-box">
+                      <p>“Aku tidak sadar kapan tepatnya kamu berubah dari orang asing menjadi seseorang yang paling
+                        kutakutkan kehilangannya.”</p>
+                    </div>
+                    <p>Segalanya terasa begitu hangat dan alami, sampai aku lupa bertanya pada diriku sendiri: apakah
+                      kamu juga merasakan getaran yang sama, ataukah aku hanya kebetulan ada di saat kamu sedang butuh
+                      teman bicara?</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">4</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 3 (Hal 5 & 6): BAB 2 ================= -->
+            <div class="sheet" data-sheet-index="2">
+              <div class="page page-left" data-page-num="5">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 2</span>
+                    <h2 class="chapter-title">Aku Mulai Berharap</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">H</span>arapan adalah hal paling rapuh yang
+                      pernah diciptakan manusia. Sekali kamu memberinya ruang, ia akan merambat diam-diam dan menguasai
+                      seluruh isi dadamu.</p>
+                    <p>Aku mulai menghafal kebiasaanmu. Aku tahu kamu tidak suka kopi yang terlalu manis. Aku tahu
+                      caramu mengetik pesan ketika sedang kesal, dan bagaimana kamu mendadak cerewet ketika membicarakan
+                      hal-hal yang kamu cintai.</p>
+                    <p>Ketika kamu meneleponku larut malam hanya untuk mengatakan, <em>“Tadi aku dengar lagu ini, dan
+                        langsung ingat kamu,”</em> dadaku bergetar dengan cara yang belum pernah kurasakan sebelumnya.
+                    </p>
+                    <p>Di kepalaku, sebuah skenario masa depan mulai tumbuh perlahan. Tentang sore-sore yang kelak akan
+                      kita lalui bersama, tentang perjalanan panjang di mana tangan kita tidak lagi ragu untuk bertaut.
+                    </p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">5</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="6">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="story-body">
+                    <p>Aku mulai tersenyum sendiri ketika melihat namamu muncul di layar ponsel. Teman-temanku mulai
+                      menyadari perubahanku. Mereka bilang mataku berbinar ketika membicarakanmu.</p>
+                    <p>“Kamu kelihatan senang sekali akhir-akhir ini,” kata mereka.</p>
+                    <p>Dan aku hanya bisa menunduk malu, menyimpan namamu erat-erat di dalam benakku seperti rahasia
+                      paling berharga di dunia.</p>
+                    <p>Aku percaya bahwa semesta sedang bermurah hati. Aku meyakinkan diriku bahwa perhatian sederhana
+                      darimu bukanlah kebetulan. Bahwa di antara miliaran manusia di bumi ini, kita dipertemukan untuk
+                      saling melengkapi.</p>
+                    <p>Betapa naifnya aku saat itu. Mengira bahwa seseorang yang memberiku payung saat hujan pasti
+                      berniat berjalan bersamaku hingga pelangi datang.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">6</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 4 (Hal 7 & 8): SURAT I & KUTIPAN I ================= -->
+            <div class="sheet" data-sheet-index="3">
+              <div class="page page-left letter-parchment" data-page-num="7">
+                <div class="page-texture letter-texture"></div>
+                <div class="letter-content">
+                  <span class="letter-stamp">SURAT TAK TERKIRIM #01</span>
+                  <div class="letter-date">Oktober, Larut Malam</div>
+                  <div class="handwritten-body">
+                    <p class="letter-salutation">Untuk kamu yang sedang tertidur lelap,</p>
+                    <p>Malam ini hujan turun lagi. Aku memandangi cangkir kopi yang sudah dingin di mejaku, dan entah
+                      mengapa, bayangmu tidak mau beranjak dari kepala.</p>
+                    <p>Ada banyak hal yang ingin kukatakan ketika kita duduk berdua kemarin sore. Tentang betapa
+                      deg-degannya jantungku saat jemari kita tidak sengaja bersentuhan saat mengambil buku menu.</p>
+                    <p>Aku ingin bertanya: apakah kamu pernah memikirkanku sebelum tidur seperti aku memikirkanmu?
+                      Apakah namaku pernah terlintas saat kamu mendengar lagu cinta di radio?</p>
+                    <p>Namun lidahku selalu kelu. Aku terlalu takut merusak kenyamanan yang ada. Jadi kubiarkan
+                      kata-kata ini tenggelam di atas kertas ini saja.</p>
+                    <p class="letter-sign">Dari seseorang yang mengagumimu dalam diam.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">7</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right quote-spread-page" data-page-num="8">
+                <div class="page-texture"></div>
+                <div class="page-content quote-centered">
+                  <div class="quote-ornament-top">❝</div>
+                  <blockquote class="poetic-quote">
+                    Bagian paling menyedihkan dari jatuh cinta sendirian adalah: kita merayakan kebahagiaan yang kita
+                    ciptakan sendiri di dalam kepala.
+                  </blockquote>
+                  <div class="quote-author-line">— Catatan di Balik Jendela</div>
+                  <div class="page-footer">
+                    <span class="page-number">8</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 5 (Hal 9 & 10): BAB 3 ================= -->
+            <div class="sheet" data-sheet-index="4">
+              <div class="page page-left" data-page-num="9">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 3</span>
+                    <h2 class="chapter-title">Hal-Hal Kecil yang Kusalahartikan</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">K</span>ita sering kali menjadi buta bukan karena
+                      gelap, melainkan karena terlalu silau oleh cahaya yang kita ciptakan sendiri.</p>
+                    <p>Ketika kamu mengirimiku pesan, <em>“Jangan lupa makan ya, nanti maag-mu kambuh,”</em> aku
+                      mengiranya sebagai bentuk kasih sayang yang mendalam.</p>
+                    <p>Ketika kamu bercerita tentang hari burukmu sambil menyandarkan kepala sebentar di pundakku saat
+                      kita meneduh dari hujan lebat, aku mengiranya sebagai tanda bahwa aku adalah pelabuhan tempatmu
+                      pulang.</p>
+                    <p>Setiap kata manismu kurekam dengan teliti. Setiap tatapan matamu yang hangat kuartikan sebagai
+                      janji yang tak terucap.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">9</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="10">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="story-body">
+                    <p>Aku tidak menyadari satu hal yang teramat penting: bagi orang yang ramah, kebaikan adalah refleks
+                      alamiah, bukan tanda cinta.</p>
+                    <p>Kamu memang baik kepada semua orang. Kamu memang pendengar yang sabar bagi siapa pun. Hanya saja,
+                      karena aku mencintaimu, aku merasa bahwa kebaikan itu dikhususkan hanya untukku.</p>
+                    <div class="illustration-snippet">
+                      <img src="assets/bench.jpg" alt="Bangku taman basah di bawah lampu jalan" class="inline-book-art">
+                      <span class="art-caption">Bangku yang pernah kita singgahi, kini hanya menyisakan dingin.</span>
+                    </div>
+                    <p>Aku mengira pintu hatimu sedang terbuka lebar untukku masuki. Padahal, kamu hanya sedang membuka
+                      sedikit ventilasi karena ruanganmu terasa pengap oleh kenangan masa lalumu.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">10</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 6 (Hal 11 & 12): BAB 4 ================= -->
+            <div class="sheet" data-sheet-index="5">
+              <div class="page page-left" data-page-num="11">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 4</span>
+                    <h2 class="chapter-title">Ada Nama Lain di Hatimu</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">P</span>erubahan itu tidak terjadi secara
+                      dramatis seperti di film-film. Ia datang merayap perlahan, seperti senja yang menggantikan siang
+                      tanpa suara gaduh.</p>
+                    <p>Awalnya hanya sebuah nama yang sesekali terselip di sela obrolan santai kita. Nama seseorang dari
+                      masa lalumu—atau mungkin seseorang baru yang baru saja masuk ke lingkungan kantormu.</p>
+                    <p>Lalu, nama itu mulai semakin sering muncul. Setiap kali kamu menceritakannya, ada nada suara yang
+                      berbeda. Ada binar di matamu yang belum pernah kulihat ketika kamu berbicara denganku.</p>
+                    <p>Kamu menjadi lebih sering melamun saat kita duduk bersama. Jarimu sibuk mengetik di layar
+                      ponselmu dengan senyuman tersipu yang kamu coba sembunyikan.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">11</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="12">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="story-body">
+                    <p>Suatu sore, saat kita sedang berjalan beriringan di trotoar, kamu mendadak berhenti dan berkata
+                      antusias,</p>
+                    <p>“Eh, tahu tidak? Kemarin dia mengajakku nonton film yang sudah lama ingin kulihat. Dia baik
+                      sekali ya?”</p>
+                    <p>Kalimat itu terdengar begitu ceria di telingamu. Namun bagiku, itu adalah palu godam yang
+                      menghantam seluruh bangunan mimpi yang kubangun berbulan-bulan.</p>
+                    <p>Darahku terasa dingin. Tenggorokanku tercekat. Namun dengan sisa tenagaku, aku memaksakan sebuah
+                      senyuman di bibir dan menjawab pelan:</p>
+                    <p><em>“Wah, iya... bagus dong kalau begitu.”</em></p>
+                    <p>Di detik itu, aku menyadari posisiku yang sebenarnya. Aku bukan calon pemeran utama di hidupmu.
+                      Aku hanyalah penonton yang duduk di barisan depan, menyaksikanmu jatuh cinta pada orang lain.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">12</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 7 (Hal 13 & 14): BAB 5 ================= -->
+            <div class="sheet" data-sheet-index="6">
+              <div class="page page-left" data-page-num="13">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 5</span>
+                    <h2 class="chapter-title">Ternyata Bukan Aku</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">K</span>enyataan paling menyakitkan tidak pernah
+                      datang dengan teriakan atau tangisan histeris. Ia datang dalam keheningan yang mematikan.</p>
+                    <p>Malam Minggu itu, setelah seharian pesan-pesanku hanya dibalas singkat dengan jeda berjam-jam,
+                      ponselku bergetar sekali di atas meja kayu.</p>
+                    <p>Sebuah notifikasi foto masuk. Dua cangkir kopi di atas meja dengan latar lampu kota, dan sepasang
+                      tangan yang saling menggenggam erat.</p>
+                    <p>Di bawahnya tertulis satu baris pesan darimu:</p>
+                    <div class="message-bubble">
+                      <p>“Aku cuma mau cerita... akhirnya malam ini dia menyatakan perasaannya. Dan aku menerimanya.
+                        Doakan kami ya, kamu sahabat terbaikku.”</p>
+                    </div>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">13</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="14">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="story-body">
+                    <p>Kamar tidurku mendadak terasa begitu hampa dan pengap. Udara seolah tersedot habis dari
+                      paru-paruku.</p>
+                    <p>Aku menatap kata itu berulang-ulang: <strong>sahabat terbaikku</strong>. Kata yang selama ini
+                      terdengar mulia, namun malam itu terasa seperti vonis mati bagi seluruh perasaanku.</p>
+                    <p>Aku mengetik dengan jari yang bergetar hebat. Menghapus kalimat pertama yang ingin kutulis.
+                      Menggantinya lagi. Menghapusnya lagi.</p>
+                    <p>Hingga akhirnya yang kukirimkan hanyalah:</p>
+                    <p><em>“Selamat ya. Aku ikut senang kalau kamu bahagia.”</em></p>
+                    <p>Lalu kutaruh ponselku dengan layar menghadap ke bawah. Tidak ada air mata yang langsung tumpah.
+                      Yang ada hanyalah rasa sesak yang meremukkan rongga dada, kebas yang begitu dingin, dan keheningan
+                      panjang yang membuktikan bahwa harapanku telah usai.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">14</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 8 (Hal 15 & 16): SURAT II & KUTIPAN II ================= -->
+            <div class="sheet" data-sheet-index="7">
+              <div class="page page-left letter-parchment" data-page-num="15">
+                <div class="page-texture letter-texture"></div>
+                <div class="letter-content">
+                  <span class="letter-stamp">SURAT TAK TERKIRIM #02</span>
+                  <div class="letter-date">November, Menjelang Pagi</div>
+                  <div class="handwritten-body">
+                    <p class="letter-salutation">Untuk kamu yang telah menemukan rumahmu,</p>
+                    <p>Aku menulis ini dari meja kafe di sudut jendela yang dulu sering kita tempati saat menunggu
+                      gerimis reda.</p>
+                    <p>Kursi di depanku kini kosong. Pelayan kafe bahkan masih ingat menu pesananmu yang biasa kutemani.
+                      Ia sempat bertanya ke mana kamu pergi, dan aku hanya bisa tersenyum simpul.</p>
+                    <p>Aku tidak membencimu karena memilih dia. Cinta memang tidak pernah bisa dipaksakan. Kamu berhak
+                      memilih siapa yang membuat hatimu merasa utuh.</p>
+                    <p>Hanya saja, izinkan aku berduka sebentar untuk diriku sendiri. Untuk hati yang sudah berjuang
+                      sejauh ini, tetapi tidak pernah sampai ke garis akhir.</p>
+                    <p class="letter-sign">Dari orang yang belajar beranjak.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">15</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right quote-spread-page" data-page-num="16">
+                <div class="page-texture"></div>
+                <div class="page-content quote-centered">
+                  <div class="quote-ornament-top">❝</div>
+                  <blockquote class="poetic-quote">
+                    Ternyata kamu tidak sulit untuk mencintai.<br>
+                    Kamu hanya tidak mencintaiku.
+                  </blockquote>
+                  <div class="quote-author-line">— Kenyataan yang Terlambat Kupahami</div>
+                  <div class="letter-keepsake-container" id="letterPhotoTrigger" title="Klik untuk memperbesar foto">
+                    <div class="washi-tape-pin"></div>
+                    <div class="letter-keepsake-frame">
+                      <img src="assets/letter.jpg"
+                        alt="Surat tak terkirim dan cangkir kopi di dekat jendela kafe saat hujan"
+                        class="letter-keepsake-img" id="letterPhotoImg">
+                      <div class="letter-keepsake-glare"></div>
+                    </div>
+                    <span class="letter-keepsake-caption">“Secangkir kopi yang mendingin dan surat yang takkan pernah
+                      sampai.”</span>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">16</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 9 (Hal 17 & 18): BAB 6 ================= -->
+            <div class="sheet" data-sheet-index="8">
+              <div class="page page-left" data-page-num="17">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 6</span>
+                    <h2 class="chapter-title">Aku Melihatmu Bahagia Dengannya</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">M</span>elihat orang yang kita cintai bahagia
+                      bersama orang lain adalah bentuk keikhlasan yang paling menyakitkan yang pernah ada.</p>
+                    <p>Beberapa minggu setelah kabar itu, lini masa media sosialmu mulai dipenuhi momen-momen
+                      bersamanya.</p>
+                    <p>Aku melihat bagaimana kamu menatapnya di setiap foto. Tatapan teduh dan penuh pemujaan yang dulu
+                      selalu kudambakan bisa tertuju padaku.</p>
+                    <p>Aku melihat bagaimana kamu rela meluangkan waktu berjam-jam untuk menemaninya berbelanja, hal
+                      yang dulu pernah kamu katakan paling membosankan di dunia.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">17</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="18">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="story-body">
+                    <p>Di situlah aku memahami sebuah kenyataan pahit:</p>
+                    <p>Seseorang tidak pernah benar-benar “belum siap berkomitmen” atau “terlalu sibuk dengan urusan
+                      hidupnya”. Ketika orang yang tepat datang, semua alasan dan batasan itu akan runtuh dengan
+                      sendirinya.</p>
+                    <p>Kamu mampu memberikan kepastian, kelembutan, dan kehadiran penuh. Hanya saja, kamu tidak ingin
+                      memberikannya kepadaku.</p>
+                    <p>Dan anehnya, melihat tawamu yang lepas di sampingnya membuat rasa marahku perlahan memudar,
+                      berganti menjadi sebuah kesadaran bahwa memaksamu bersamaku hanya akan menahan bahagiamu.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">18</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 10 (Hal 19 & 20): BAB 7 ================= -->
+            <div class="sheet" data-sheet-index="9">
+              <div class="page page-left" data-page-num="19">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 7</span>
+                    <h2 class="chapter-title">Berhenti Menunggu</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">K</span>esembuhan tidak datang dalam satu malam.
+                      Ia datang dalam serpihan-serpihan keputusan kecil yang kuambil setiap hari.</p>
+                    <p>Hari pertama, aku berhenti memeriksa status <em>last seen</em> di aplikasi percakapanmu. Hari
+                      berikutnya, aku membisukan cerita di media sosialmu agar tidak lagi disuguhkan pemandangan yang
+                      meremukkan hati.</p>
+                    <p>Aku mulai membiasakan diri untuk tidak lagi membagikan hal-hal lucu yang kutemukan di internet
+                      kepadamu. Menahan jariku agar tidak mengetik pesan saat rindu menyerang di tengah heningnya malam.
+                    </p>
+                    <p>Sulit. Sangat sulit. Ada saat-saat di mana aku merasa seperti kambuh dan ingin kembali memohon
+                      sedikit saja perhatianmu.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">19</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right" data-page-num="20">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <div class="story-body">
+                    <p>Namun setiap kali godaan itu datang, aku mengingatkan diriku sendiri:</p>
+                    <div class="quote-box">
+                      <p>“Seseorang yang tidak memilihmu tidak akan pernah bisa kamu pertahankan, seberapa keras pun
+                        kamu mencoba membuktikan ketulusanmu.”</p>
+                    </div>
+                    <p>Aku belajar memaafkan diriku sendiri yang telah terlalu percaya diri. Memaafkan hatiku yang
+                      terlalu cepat menaruh harapan.</p>
+                    <p>Menunggu seseorang yang sudah memilih orang lain bukanlah kesetiaan; itu hanyalah kebodohan yang
+                      menyamarkan diri sebagai ketulusan.</p>
+                    <p>Maka aku memilih berhenti. Bukan karena lelah mencintai, melainkan karena aku sadar hatiku
+                      sendiri layak diselamatkan.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">20</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 11 (Hal 21 & 22): BAB 8 & KUTIPAN PENUTUP ================= -->
+            <div class="sheet" data-sheet-index="10">
+              <div class="page page-left" data-page-num="21">
+                <div class="page-texture"></div>
+                <div class="page-content">
+                  <header class="chapter-heading">
+                    <span class="chapter-number">Bab 8</span>
+                    <h2 class="chapter-title">Pada Akhirnya, Aku Melepaskanmu</h2>
+                    <div class="heading-ornament">❖</div>
+                  </header>
+                  <div class="story-body">
+                    <p class="dropcap-paragraph"><span class="dropcap">H</span>ari ini, langit di luar jendelaku kembali
+                      dihiasi rintik hujan. Namun aroma tanah basah kali ini tidak lagi terasa menyayat.</p>
+                    <p>Aku menyadari bahwa melepaskan seseorang tidak berarti menghapus seluruh kenangan tentangnya. Aku
+                      masih mengingat tawamu, lagu-lagu kesukaanmu, dan jalan-jalan kota yang pernah kita lalui bersama.
+                    </p>
+                    <p>Bedanya, kenangan itu kini kuletakkan di tempat yang aman: sebagai bagian dari perjalanan hidup
+                      yang pernah membentuk siapa diriku hari ini.</p>
+                    <p>Aku tidak lagi berharap namaku terpikirkan olehmu. Aku tidak lagi membayangkan skenario masa
+                      depan yang mustahil.</p>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">21</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right epilogue-spread-page" data-page-num="22">
+                <div class="page-texture"></div>
+                <div class="page-content epilogue-layout">
+                  <div class="epilogue-box">
+                    <p class="closing-solemn-quote">
+                      “Aku pernah berharap menjadi seseorang yang kamu pilih. Aku pernah membayangkan namaku menjadi
+                      alasan di balik senyummu. Namun, pada akhirnya, kamu menggenggam tangan orang lain, sementara aku
+                      belajar melepaskan tangan yang bahkan tidak pernah benar-benar menggenggamku.”
+                    </p>
+                  </div>
+                  <div class="closing-signature">
+                    <span class="author-sign">— Selesai</span>
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">22</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= SPREAD 12 (Hal 23 & 24): HALAMAN TERAKHIR & SAMPUL BELAKANG ================= -->
+            <div class="sheet" data-sheet-index="11">
+              <div class="page page-left final-empty-page" data-page-num="23">
+                <div class="page-texture"></div>
+                <div class="page-content almost-empty-center">
+                  <p class="final-whisper">
+                    “Terima kasih sudah pernah menjadi bagian dari cerita yang tidak pernah menjadi milikku.”
+                  </p>
+                  <div class="final-dot">✦</div>
+                  <div class="page-footer">
+                    <span class="page-number">23</span>
+                  </div>
+                </div>
+              </div>
+              <div class="page page-right back-cover-page" data-page-num="24">
+                <div class="page-texture"></div>
+                <div class="page-content back-cover-content">
+                  <div class="back-cover-emblem">❦</div>
+                  <h3 class="back-cover-heading">EPILOG</h3>
+                  <p class="back-cover-blurb">
+                    Tidak semua hati yang kita datangi ditakdirkan menjadi tempat pulang. Sebagian dari mereka hanyalah
+                    halte persinggahan agar kita belajar bagaimana cara mencintai diri sendiri dengan lebih utuh.
+                  </p>
+
+                  <div class="completion-card">
+                    <span class="completion-check">✓</span>
+                    <span class="completion-text">Kamu telah menyelesaikan pembacaan</span>
+                  </div>
+
+                  <div class="back-cover-actions">
+                    <button class="btn-read-again" id="btnReadAgain">
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z" />
+                      </svg>
+                      <span>Baca Kembali Dari Awal</span>
+                    </button>
+                    <button class="btn-share-quote" id="btnShareQuote">
+                      <svg viewBox="0 0 24 24">
+                        <path
+                          d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z" />
+                      </svg>
+                      <span>Salin Kutipan Renungan</span>
+                    </button>
+                  </div>
+
+                  <div class="colophon">
+                    Diterbitkan secara digital untuk jiwa-jiwa yang sedang belajar melepaskan.
+                  </div>
+                  <div class="page-footer">
+                    <span class="page-number">24</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- /book-spread -->
+        </div><!-- /book-container -->
+      </div><!-- /book-viewport -->
+
+      <!-- Side Navigation Arrow Right -->
+      <button class="nav-arrow nav-next" id="navNextBtn" title="Halaman Selanjutnya (Panah Kanan)"
+        aria-label="Halaman Selanjutnya">
+        <svg viewBox="0 0 24 24">
+          <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
+        </svg>
+      </button>
+
+      <!-- Bottom Reader Navigation & Progress Bar -->
+      <footer class="reader-footer">
+        <div class="progress-bar-container">
+          <div class="progress-fill" id="progressFill" style="width: 8%;"></div>
+        </div>
+        <div class="reader-status-text">
+          <span id="pageIndicatorText">Halaman 1 – 2 dari 24</span>
+          <span class="mobile-swipe-hint">Geser untuk membalik</span>
+        </div>
+      </footer>
+
+    </section>
+
+  </main>
+
+
+  <!-- TABLE OF CONTENTS (DRAWER MODAL) -->
+  <aside class="toc-drawer" id="tocDrawer" aria-hidden="true">
+    <div class="toc-backdrop" id="tocBackdrop"></div>
+    <div class="toc-panel">
+      <div class="toc-panel-header">
+        <h3 class="toc-panel-title">Daftar Isi Buku</h3>
+        <button class="toc-close-btn" id="tocCloseBtn" aria-label="Tutup Daftar Isi">✕</button>
+      </div>
+      <div class="toc-panel-sub">Pilih bab atau halaman untuk langsung membuka</div>
+      <nav class="toc-nav">
+        <ul class="toc-links-list">
+          <li>
+            <button class="toc-jump-link" data-goto="1">
+              <span class="toc-ch-num">I</span>
+              <span class="toc-ch-name">Prakata & Judul Buku</span>
+              <span class="toc-ch-pg">Hal. 1</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="3">
+              <span class="toc-ch-num">Bab 1</span>
+              <span class="toc-ch-name">Awal yang Tidak Direncanakan</span>
+              <span class="toc-ch-pg">Hal. 3</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="5">
+              <span class="toc-ch-num">Bab 2</span>
+              <span class="toc-ch-name">Aku Mulai Berharap</span>
+              <span class="toc-ch-pg">Hal. 5</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link special-link" data-goto="7">
+              <span class="toc-ch-num">Surat I</span>
+              <span class="toc-ch-name">Hal-Hal yang Tak Pernah Kuucapkan</span>
+              <span class="toc-ch-pg">Hal. 7</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="9">
+              <span class="toc-ch-num">Bab 3</span>
+              <span class="toc-ch-name">Hal-Hal Kecil yang Kusalahartikan</span>
+              <span class="toc-ch-pg">Hal. 9</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="11">
+              <span class="toc-ch-num">Bab 4</span>
+              <span class="toc-ch-name">Ada Nama Lain di Hatimu</span>
+              <span class="toc-ch-pg">Hal. 11</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="13">
+              <span class="toc-ch-num">Bab 5</span>
+              <span class="toc-ch-name">Ternyata Bukan Aku</span>
+              <span class="toc-ch-pg">Hal. 13</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link special-link" data-goto="15">
+              <span class="toc-ch-num">Surat II</span>
+              <span class="toc-ch-name">Di Meja Kafe yang Sama, Tanpamu</span>
+              <span class="toc-ch-pg">Hal. 15</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="17">
+              <span class="toc-ch-num">Bab 6</span>
+              <span class="toc-ch-name">Aku Melihatmu Bahagia Dengannya</span>
+              <span class="toc-ch-pg">Hal. 17</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="19">
+              <span class="toc-ch-num">Bab 7</span>
+              <span class="toc-ch-name">Berhenti Menunggu</span>
+              <span class="toc-ch-pg">Hal. 19</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link" data-goto="21">
+              <span class="toc-ch-num">Bab 8</span>
+              <span class="toc-ch-name">Pada Akhirnya, Aku Melepaskanmu</span>
+              <span class="toc-ch-pg">Hal. 21</span>
+            </button>
+          </li>
+          <li>
+            <button class="toc-jump-link special-link" data-goto="23">
+              <span class="toc-ch-num">Epilog</span>
+              <span class="toc-ch-name">Terima Kasih & Penutup</span>
+              <span class="toc-ch-pg">Hal. 23</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Lightbox Modal untuk Melihat Foto Penuh -->
+  <div class="photo-lightbox" id="photoLightbox" aria-hidden="true">
+    <div class="lightbox-backdrop" id="lightboxBackdrop"></div>
+    <div class="lightbox-card">
+      <button class="lightbox-close-btn" id="lightboxCloseBtn" aria-label="Tutup Foto">✕</button>
+      <img src="assets/letter.jpg" alt="Surat tak terkirim dan cangkir kopi di dekat jendela kafe saat hujan"
+        class="lightbox-img">
+      <p class="lightbox-caption">“Secangkir kopi yang mendingin dan surat yang takkan pernah sampai.”</p>
+    </div>
+  </div>
+
+  <!-- Audio Musik Latar dari Folder musik -->
+  <audio id="bgMusic" preload="auto" loop>
+    <source src="musik/lagu.mp3" type="audio/mpeg">
+    <source src="musik/piano.mp3" type="audio/mpeg">
+    <source src="musik/5 Minutes Relaxing Piano Music with Rain Sound __ Sleep Music, Meditation Music.mp3"
+      type="audio/mpeg">
+  </audio>
+
+  <script src="script.js"></script>
+</body>
+
+</html>
